@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。 ​">
+<meta name="description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。讲解的知识点比较基础。 ​">
 <meta name="keywords" content="C++,Advanced C++">
 <meta property="og:type" content="article">
 <meta property="og:title" content="【C++学习】C++对象模型">
 <meta property="og:url" content="http://ddming.github.io/2018/01/08/cpp-object-model/index.html">
 <meta property="og:site_name" content="MingY Chao Blog">
-<meta property="og:description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。 ​">
+<meta property="og:description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。讲解的知识点比较基础。 ​">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-01-08T13:21:58.410Z">
+<meta property="og:updated_time" content="2018-03-06T02:03:31.310Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="【C++学习】C++对象模型">
-<meta name="twitter:description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。 ​">
+<meta name="twitter:description" content="​    文章的起因源自于在youtube上看了2015年cppcon的一次演讲。演讲的主题便是C++ Object Model。讲解的知识点比较基础。 ​">
 
 
 
@@ -339,8 +339,16 @@
       
 
       
-        <p>​    文章的起因源自于在youtube上看了2015年<code>cppcon</code>的一次<a href="https://www.youtube.com/watch?v=iLiDezv_Frk&amp;index=12&amp;list=WL" target="_blank" rel="noopener">演讲</a>。演讲的主题便是<code>C++ Object Model</code>。</p>
+        <p>​    文章的起因源自于在youtube上看了2015年<code>cppcon</code>的一次<a href="https://www.youtube.com/watch?v=iLiDezv_Frk&amp;index=12&amp;list=WL" target="_blank" rel="noopener">演讲</a>。演讲的主题便是<code>C++ Object Model</code>。讲解的知识点比较基础。</p>
 <p>​    <a id="more"></a></p>
+<p>####一个最简单的<code>C++</code>对象模型</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Complex</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="keyword">float</span> real;</span><br><span class="line">  <span class="keyword">float</span> imag;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  Complex c;</span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sizeof(float)"</span> &lt;&lt; <span class="keyword">sizeof</span>(<span class="keyword">float</span>) &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 4</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sizeof(Complex)"</span> &lt;&lt; <span class="keyword">sizeof</span>(Complex) &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 8</span></span><br><span class="line">  </span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of c: "</span> &lt;&lt; &amp;c &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee7282528</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of c.real: "</span> &lt;&lt; &amp;c.real &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee7282528</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of c.imag: "</span> &lt;&lt; &amp;c.imag &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee728252c</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    结构<code>Complex</code>属于POD (Plain Old Data)。对象<code>c</code>在栈中，数据从低地址向高地址排列。</p>
+<p>​    将对象结构的关键字从<code>struct</code>改为<code>class</code>，唯一的区别是<code>class</code>的成员变量默认是<code>private</code>，<code>struct</code>默认是<code>public</code>。所以上述代码<code>c.real</code>，<code>c.imag</code>将会无法访问。</p>
+<p>####带有继承的对象模型</p>
+<p>​    如果考虑到对象继承的情况。C++对象的大小和在内存中的情况将会是什么样的呢。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Complex</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="keyword">float</span> real;</span><br><span class="line">  <span class="keyword">float</span> imag;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Derived</span> :</span> <span class="keyword">public</span> Complex</span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">float</span> angle;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sizeof(float)"</span> &lt;&lt; <span class="keyword">sizeof</span>(<span class="keyword">float</span>) &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 4</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sizeof(Complex)"</span> &lt;&lt; <span class="keyword">sizeof</span>(Complex) &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 8</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sizeof(Derived)"</span> &lt;&lt; <span class="keyword">sizeof</span>(Derived) &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 12</span></span><br><span class="line">  Derived d;</span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of d: "</span> &lt;&lt; &amp;d &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee9436520</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of d.real: "</span> &lt;&lt; &amp;d.real &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee9436520</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of d.imag: "</span> &lt;&lt; &amp;d.imag &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee9436524</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"address of d.angle: "</span> &lt;&lt; &amp;d.angle &lt;&lt; <span class="string">"\n"</span>; <span class="comment">// 0x7ffee9436528</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    继承可以看作是原数据结构的拓展，在基类的基础上，沿着栈方向，增加变量。</p>
 
       
     </div>
@@ -382,6 +390,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/03/06/cpp-static-objects-md/" rel="prev" title="static对象的初始化问题">
+                static对象的初始化问题 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -449,7 +461,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -462,7 +474,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

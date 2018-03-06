@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.3" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.3">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.3">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.3" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="C++,static keyword,static initialization order fiasco,Effective C++," />
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="​    最近在看Scott Meyers的Effecyive C++，读到Item 4:Make sure that objects are initialized before they&amp;#39;re used.，由此引申到了static initialization order fiasco的问题。 ​">
+<meta name="keywords" content="C++,static keyword,static initialization order fiasco,Effective C++">
+<meta property="og:type" content="article">
+<meta property="og:title" content="static对象的初始化问题">
+<meta property="og:url" content="http://ddming.github.io/2018/03/06/cpp-static-objects-md/index.html">
+<meta property="og:site_name" content="MingY Chao Blog">
+<meta property="og:description" content="​    最近在看Scott Meyers的Effecyive C++，读到Item 4:Make sure that objects are initialized before they&amp;#39;re used.，由此引申到了static initialization order fiasco的问题。 ​">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2018-03-06T06:38:07.805Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="static对象的初始化问题">
+<meta name="twitter:description" content="​    最近在看Scott Meyers的Effecyive C++，读到Item 4:Make sure that objects are initialized before they&amp;#39;re used.，由此引申到了static initialization order fiasco的问题。 ​">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '5.1.3',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://ddming.github.io/2018/03/06/cpp-static-objects-md/"/>
+
+
+
+
+
+  <title>static对象的初始化问题 | MingY Chao Blog</title>
+  
+
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-103972303-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">MingY Chao Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">编程初学者的博客</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://ddming.github.io/2018/03/06/cpp-static-objects-md/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Harry Chao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="MingY Chao Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">static对象的初始化问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-06T10:01:59+08:00">
+                2018-03-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>​    最近在看Scott Meyers的<code>Effecyive C++</code>，读到<code>Item 4:Make sure that objects are initialized before they&#39;re used.</code>，由此引申到了<code>static initialization order fiasco</code>的问题。</p>
+<p>​    <a id="more"></a></p>
+<h4 id="关于static关键字"><a href="#关于static关键字" class="headerlink" title="关于static关键字"></a>关于<code>static</code>关键字</h4><ul>
+<li><p><code>static</code>修饰函数。</p>
+<p>static修饰成员函数(member function)时，只能操作class里的static数据，无法操作non-static数据。调用static函数时通过class name来进行调用。</p>
+<p>当static修饰普通函数时，属于<code>internal linkage</code>。此函数则对其他的<a href="https://stackoverflow.com/questions/1106149/what-is-a-translation-unit-in-c" target="_blank" rel="noopener"><code>translation unit</code></a>(可以被编译为object file的源代码文件，包括其include的所有头文件，也称作compilation unit，暂且翻译为编译单元)不可见。</p>
+</li>
+<li><p><code>static</code>修饰对象</p>
+<p>被static修饰的对象生命周期是从对象构造完成，直到程序结束。称作<code>static storage duration</code>。</p>
+<p>有这样生命周期的对象包括全局变量，<code>namespace scope</code>中的变量，class中声明为static的变量，<code>file scope</code>中声明为static的变量，函数中声明为static的变量。其中，在函数中声明的<code>static</code>变量称为<code>local static object</code>（因为该变量只能在函数内被访问），其他类型的变量称为<code>non-local static objects</code>。</p>
+</li>
+</ul>
+<h4 id="问题的引入"><a href="#问题的引入" class="headerlink" title="问题的引入"></a>问题的引入</h4><p><code>Effective C++ Item 4</code>提出这样一个问题。如果位于不同编译单元的<code>static objects</code>在初始化时存在依赖关系，即A<code>static object</code>依赖于B<code>static object</code>初始化完成，比如A需要调用B中的方法，且A、B位于不同的编译单元。作者告诉我们，无法保证B一定在A之前初始化完成的。不同编译单元的<code>static object</code>的初始化顺序是无法确定的。</p>
+<p>但是<code>Scott Meyers</code>提出了一种解决办法。将<code>non-local static object</code>转为<code>local static object</code>。因为C++能够保证当函数初次调用时，函数内声明的<code>local static object</code>将会被初始化。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 示例代码</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span>&#123;</span>...&#125;;</span><br><span class="line"><span class="function">Foo&amp; <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">static</span> Foo s_foo;</span><br><span class="line">    <span class="keyword">return</span> s_foo;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上的这种做法很好解决了初始化时依赖的问题。</p>
+<p><code>Effective C++</code>在讲完这种处理办法之后便结束了讨论，查阅更多资料的时候发现，这种处理办法在某些更严格的要求下，还是会存在一定的问题。</p>
+<h4 id="问题的延伸"><a href="#问题的延伸" class="headerlink" title="问题的延伸"></a>问题的延伸</h4><p>Part 2的解决方案只是处理了<code>static initialization</code> ，而额外引入了<code>static deinitialization</code>的问题。<code>static initialization</code> 即在调用前保证对象已经初始化完成。<code>static deinitialization</code> 表示对象在最后一次调用前不能析构。</p>
+<p>如果<code>static objects</code>a,b,c在析构时都依赖另外一个<code>static objects</code>ans，由于程序退出时的析构顺序同样是不可控的，所以这个问题是书中方案无法解决的。</p>
+<p><code>isocpp wiki</code>上提出了这样的一个办法。将<code>object</code>声明为指针。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 示例代码</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span>&#123;</span>...&#125;;</span><br><span class="line"><span class="function">Foo&amp; <span class="title">foo</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">static</span> Foo *ans = <span class="keyword">new</span> Foo();</span><br><span class="line">    <span class="keyword">return</span> *ans;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在整个程序的运行中，ans的资源不会释放，也就保证了其余依赖ans的<code>static objects</code>在析构时，ans一定没有被析构。以上代码将资源的释放最后交给了操作系统来完成。</p>
+<p>理论上来讲，上述的方法已经是一个比较完美的解决办法了。但是有没有其他优雅的方法既能够保证初始化时的依赖，又能够保证析构时的依赖呢。答案：有，<em>Nifty Counter Idiom</em>。</p>
+<h4 id="Nifty-Counter-Idiom"><a href="#Nifty-Counter-Idiom" class="headerlink" title="Nifty Counter Idiom"></a><em>Nifty Counter Idiom</em></h4><p>​    <code>Nifty Counter</code>又叫做<code>Schwarz Counter</code>，能够保证<code>non-local static object</code>在初次使用之前初始化，并且在最后一次使用后释放。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Stream.h</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> STREAM_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> STREAM_H</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Stream</span> &#123;</span></span><br><span class="line">  Stream ();</span><br><span class="line">  ~Stream ();</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">extern</span> Stream&amp; stream; <span class="comment">// global stream object</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">StreamInitializer</span> &#123;</span></span><br><span class="line">  StreamInitializer ();</span><br><span class="line">  ~StreamInitializer ();</span><br><span class="line">&#125; streamInitializer; <span class="comment">// static initializer for every translation unit</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">// STREAM_H</span></span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Stream.cpp</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"Stream.h"</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;new&gt;         // placement new</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;type_traits&gt; // aligned_storage</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> nifty_counter; <span class="comment">// zero initialized at load time</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">typename</span> <span class="built_in">std</span>::aligned_storage&lt;<span class="keyword">sizeof</span> (Stream), <span class="keyword">alignof</span> (Stream)&gt;::type</span><br><span class="line">  stream_buf; <span class="comment">// memory for the stream object</span></span><br><span class="line">Stream&amp; stream = <span class="keyword">reinterpret_cast</span>&lt;Stream&amp;&gt; (stream_buf);</span><br><span class="line"></span><br><span class="line">Stream::Stream ()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">// initialize things</span></span><br><span class="line">&#125;</span><br><span class="line">Stream::~Stream ()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="comment">// clean-up</span></span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line">StreamInitializer::StreamInitializer ()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (nifty_counter++ == <span class="number">0</span>) <span class="keyword">new</span> (&amp;stream) Stream (); <span class="comment">// placement new</span></span><br><span class="line">&#125;</span><br><span class="line">StreamInitializer::~StreamInitializer ()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (--nifty_counter == <span class="number">0</span>) (&amp;stream)-&gt;~Stream ();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>​    使用时必须先将<code>Stream.h</code>引用进来，由于头文件中的stream被声明为<code>extern</code>，所以<code>linker</code>链接器将会在class file中找到初始化方法；并在每一处调用stream的地方创建一个<code>StreamInitializer</code>的实例，通过<code>StreamInitializer</code>的构造函数和析构函数完成类似于引用计数的功能，这样就能够保证在调用时，stream对象一定已经被初始化并且没有被释放。</p>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ol>
+<li>Scott Meyers. Effective C++ Third Edition. Item 4: Make sure that objects are initialized before they’re used.</li>
+<li><a href="http://en.cppreference.com/w/cpp/language/storage_duration" target="_blank" rel="noopener">http://en.cppreference.com/w/cpp/language/storage_duration</a></li>
+<li><a href="https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Nifty_Counter" target="_blank" rel="noopener">Nifty Counter</a></li>
+<li><a href="https://stackoverflow.com/questions/15235526/the-static-keyword-and-its-various-uses-in-c" target="_blank" rel="noopener">static keyword</a></li>
+<li><a href="https://isocpp.org/wiki/faq/ctors#static-init-order" target="_blank" rel="noopener">ISOCPP CTOR WIKI</a></li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/C/" rel="tag"># C++</a>
+          
+            <a href="/tags/static-keyword/" rel="tag"># static keyword</a>
+          
+            <a href="/tags/static-initialization-order-fiasco/" rel="tag"># static initialization order fiasco</a>
+          
+            <a href="/tags/Effective-C/" rel="tag"># Effective C++</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/01/08/cpp-object-model/" rel="next" title="【C++学习】C++对象模型">
+                <i class="fa fa-chevron-left"></i> 【C++学习】C++对象模型
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Harry Chao</p>
+              <p class="site-description motion-element" itemprop="description">保持学习的状态</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/">
+              
+                  <span class="site-state-item-count">3</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          <div class="links-of-author motion-element">
+            
+          </div>
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#关于static关键字"><span class="nav-number">1.</span> <span class="nav-text">关于static关键字</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#问题的引入"><span class="nav-number">2.</span> <span class="nav-text">问题的引入</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#问题的延伸"><span class="nav-number">3.</span> <span class="nav-text">问题的延伸</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Nifty-Counter-Idiom"><span class="nav-number">4.</span> <span class="nav-text">Nifty Counter Idiom</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Harry Chao</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Muse</a> v5.1.3</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.3"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.3"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.3"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.3"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
