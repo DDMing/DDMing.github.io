@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="C++,C++ template,function overloading," />
+  <meta name="keywords" content="C++,C++ template,function overload," />
 
 
 
@@ -80,14 +80,14 @@
 
 
 <meta name="description" content="​    这一系列问题都是源自std::swap这个函数。某天，同事W发给我的一个函数，从一个函数的性能问题一直到查询gcc的源码，再到function template overloading和template specialization之间的区别，感受到了C++的难度。 ​">
-<meta name="keywords" content="C++,C++ template,function overloading">
+<meta name="keywords" content="C++,C++ template,function overload">
 <meta property="og:type" content="article">
 <meta property="og:title" content="std::swap  引发的问题">
 <meta property="og:url" content="http://ddming.github.io/2018/06/04/cpp-start-from-swap-md/index.html">
 <meta property="og:site_name" content="MingY Chao Blog">
 <meta property="og:description" content="​    这一系列问题都是源自std::swap这个函数。某天，同事W发给我的一个函数，从一个函数的性能问题一直到查询gcc的源码，再到function template overloading和template specialization之间的区别，感受到了C++的难度。 ​">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2018-06-05T00:53:32.463Z">
+<meta property="og:updated_time" content="2019-03-15T03:20:47.916Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="std::swap  引发的问题">
 <meta name="twitter:description" content="​    这一系列问题都是源自std::swap这个函数。某天，同事W发给我的一个函数，从一个函数的性能问题一直到查询gcc的源码，再到function template overloading和template specialization之间的区别，感受到了C++的难度。 ​">
@@ -341,7 +341,7 @@
       
         <p>​    这一系列问题都是源自<code>std::swap</code>这个函数。某天，同事W发给我的一个函数，从一个函数的性能问题一直到查询gcc的源码，再到<code>function template overloading</code>和<code>template specialization</code>之间的区别，感受到了<code>C++</code>的难度。</p>
 <p>​    <a id="more"></a></p>
-<h4 id="std-swap-myswap-性能差距"><a href="#std-swap-myswap-性能差距" class="headerlink" title="std::swap/myswap   性能差距"></a><code>std::swap</code>/<code>myswap</code>   性能差距</h4><p>同事W发给我的代码如下:</p>
+<h4 id="std-swap-myswap-性能差距"><a href="#std-swap-myswap-性能差距" class="headerlink" title="std::swap/myswap   性能差距"></a><code>std::swap/myswap</code>   性能差距</h4><p>同事W发给我的代码如下:</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">void</span> <span class="title">myswap</span>(<span class="title">T</span>&amp; <span class="title">a</span>, <span class="title">T</span>&amp; <span class="title">b</span>) &#123;</span></span><br><span class="line">    T tmp&#123; <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(a) &#125;;</span><br><span class="line">    a = <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(b);</span><br><span class="line">    b = <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(tmp);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个函数利用<code>static_cast</code>将<code>a,b</code>的引用转换为右值，然后交换两个值。出于好奇，想比较一下<code>myswap</code>函数和<code>std::swap</code>的性能。于是就有了如下的代码。</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;chrono&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="class"><span class="keyword">class</span> <span class="title">T</span>&gt;</span></span><br><span class="line"><span class="class"><span class="title">void</span> <span class="title">myswap</span>(<span class="title">T</span>&amp; <span class="title">a</span>, <span class="title">T</span>&amp; <span class="title">b</span>) &#123;</span></span><br><span class="line">    T tmp&#123; <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(a) &#125;;</span><br><span class="line">    a = <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(b);</span><br><span class="line">    b = <span class="keyword">static_cast</span>&lt;T&amp;&amp;&gt;(tmp);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> bigStr1;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">string</span> bigStr2;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000000</span>; i++) &#123;</span><br><span class="line">        bigStr1  += <span class="string">'1'</span>;</span><br><span class="line">        bigStr2  += <span class="string">'2'</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> start1 = <span class="built_in">std</span>::chrono::system_clock::now();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000000</span>; i++) &#123;</span><br><span class="line">        myswap(bigStr1, bigStr2);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">auto</span> end1 = <span class="built_in">std</span>::chrono::system_clock::now();</span><br><span class="line">    <span class="built_in">std</span>::chrono::duration&lt;<span class="keyword">float</span>&gt; cost1 = end1 - start1;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; cost1.count() &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">auto</span> start2 = <span class="built_in">std</span>::chrono::system_clock::now();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10000000</span>; i++) &#123;</span><br><span class="line">        <span class="built_in">std</span>::swap(bigStr1, bigStr2);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">auto</span> end2 = <span class="built_in">std</span>::chrono::system_clock::now();</span><br><span class="line">    <span class="built_in">std</span>::chrono::duration&lt;<span class="keyword">float</span>&gt; cost2 = end2 - start2;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; cost2.count() &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -397,7 +397,7 @@
           
             <a href="/tags/C-template/" rel="tag"># C++ template</a>
           
-            <a href="/tags/function-overloading/" rel="tag"># function overloading</a>
+            <a href="/tags/function-overload/" rel="tag"># function overload</a>
           
         </div>
       
@@ -508,7 +508,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -563,7 +563,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; <span itemprop="copyrightYear">2018</span>
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
   <span class="with-love">
     <i class="fa fa-user"></i>
   </span>
