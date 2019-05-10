@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="ELK,Kafka,ElasticSearch," />
+  <meta name="keywords" content="Kafka,CAP," />
 
 
 
@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="采用ELK架构踩过的坑​    从2018年11月开始做一个ELK架构的项目，记录一下半年使用和维护踩过的坑。 ​">
-<meta name="keywords" content="ELK,Kafka,ElasticSearch">
+<meta name="description" content="关于Kafka的HA以及CAP​    上周，同事问我从CAP理论来看，Kafka是什么类型。在查询不少资料后，加深了对Kafka的理解。 ​">
+<meta name="keywords" content="Kafka,CAP">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ElasticSearch-Kafka Part1">
-<meta property="og:url" content="http://ddming.github.io/2019/04/26/ELK-Part1/index.html">
+<meta property="og:title" content="Kafka-HA-CAP">
+<meta property="og:url" content="http://ddming.github.io/2019/04/28/Kafka-HA-CAP/index.html">
 <meta property="og:site_name" content="MingY Chao Blog">
-<meta property="og:description" content="采用ELK架构踩过的坑​    从2018年11月开始做一个ELK架构的项目，记录一下半年使用和维护踩过的坑。 ​">
+<meta property="og:description" content="关于Kafka的HA以及CAP​    上周，同事问我从CAP理论来看，Kafka是什么类型。在查询不少资料后，加深了对Kafka的理解。 ​">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-28T07:07:20.781Z">
+<meta property="og:updated_time" content="2019-04-28T09:28:57.187Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ElasticSearch-Kafka Part1">
-<meta name="twitter:description" content="采用ELK架构踩过的坑​    从2018年11月开始做一个ELK架构的项目，记录一下半年使用和维护踩过的坑。 ​">
+<meta name="twitter:title" content="Kafka-HA-CAP">
+<meta name="twitter:description" content="关于Kafka的HA以及CAP​    上周，同事问我从CAP理论来看，Kafka是什么类型。在查询不少资料后，加深了对Kafka的理解。 ​">
 
 
 
@@ -120,13 +120,13 @@
 
 
 
-  <link rel="canonical" href="http://ddming.github.io/2019/04/26/ELK-Part1/"/>
+  <link rel="canonical" href="http://ddming.github.io/2019/04/28/Kafka-HA-CAP/"/>
 
 
 
 
 
-  <title>ElasticSearch-Kafka Part1 | MingY Chao Blog</title>
+  <title>Kafka-HA-CAP | MingY Chao Blog</title>
   
 
 
@@ -272,7 +272,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://ddming.github.io/2019/04/26/ELK-Part1/">
+    <link itemprop="mainEntityOfPage" href="http://ddming.github.io/2019/04/28/Kafka-HA-CAP/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Harry Chao">
@@ -289,7 +289,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">ElasticSearch-Kafka Part1</h1>
+          <h1 class="post-title" itemprop="name headline">Kafka-HA-CAP</h1>
         
 
         <div class="post-meta">
@@ -301,8 +301,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-26T10:46:11+08:00">
-                2019-04-26
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-28T15:09:32+08:00">
+                2019-04-28
               </time>
             
 
@@ -339,35 +339,49 @@
       
 
       
-        <h2 id="采用ELK架构踩过的坑"><a href="#采用ELK架构踩过的坑" class="headerlink" title="采用ELK架构踩过的坑"></a>采用ELK架构踩过的坑</h2><p>​    从2018年11月开始做一个ELK架构的项目，记录一下半年使用和维护踩过的坑。</p>
+        <h2 id="关于Kafka的HA以及CAP"><a href="#关于Kafka的HA以及CAP" class="headerlink" title="关于Kafka的HA以及CAP"></a>关于Kafka的HA以及CAP</h2><p>​    上周，同事问我从CAP理论来看，<code>Kafka</code>是什么类型。在查询不少资料后，加深了对<code>Kafka</code>的理解。</p>
 <p>​    <a id="more"></a></p>
-<h3 id="1-ElasticSearch执行严格的滚动重启"><a href="#1-ElasticSearch执行严格的滚动重启" class="headerlink" title="1. ElasticSearch执行严格的滚动重启"></a>1. ElasticSearch执行严格的滚动重启</h3><p>​    ES的集群刚搭建不久，运维的同事需要做一次集群重启，没有按照严格的滚动重启，而是<strong>一次性停掉好几台（包括master）</strong>，以此来加快集群重启的速度，但重启的时候，是需要负责外部请求的。</p>
-<p>​    此次操作最终导致<strong>当天数据丢失</strong>，没有找到恢复的方法。猜测是因为数据的份数是2，如果同时下线了这两台机器，将会导致当天的<code>document</code>被新建，进而导致数据丢失。</p>
-<p>​    由于我主要负责开发方面的内容，一开始没有过多关注运维方面的问题，从这件事情之后，集群的运维我也开始关注并提供一些建议和意见（主要靠Google搜索，官方文档以及官方社区）。</p>
-<p>​    P.S. ES的重启速度是相当慢。网上有些博主的ES集群相当大，一次滚动升级耗费的时间要以天计。</p>
-<h3 id="2-留心ES的兼容性"><a href="#2-留心ES的兼容性" class="headerlink" title="2. 留心ES的兼容性"></a>2. 留心ES的兼容性</h3><p>​    刚开始集群搭建的时候没有太好的设计，后来发现ES提供<code>master node</code>的支持，于是加入了三台机器作为集群的<code>master node</code>，过了一段时间之后，发现集群处于只读状态，几台<code>data node</code>机器到达<code>高水位</code>，但是有几台<code>data node</code>机器还有大量磁盘未使用。</p>
-<p>​    在查询之后，使用命令</p>
-<p>​    <code>curl -XGET localhost:9200/_cluster/allocation/explain?pretty</code></p>
-<p>​    发现了问题，新加入的<code>master node</code>版本号是<code>6.4.4</code>，最早加入的节点的版本号是<code>6.4.2</code>，报错信息显示由于版本的不同，旧版本节点无法做<code>allocation</code>以及数据的转移，所以出现了<strong>一方有难，其他观看</strong>的局面。</p>
-<p>​    于是，滚动升级了旧节点，解决了集群只读的问题。因为数据都在<code>Kafka</code>中，只是导致<code>Kafka</code>的<code>LAG</code>飙升，而没有丢失数据。</p>
-<h3 id="3-下线机器后同步ES机器IP列表的配置"><a href="#3-下线机器后同步ES机器IP列表的配置" class="headerlink" title="3. 下线机器后同步ES机器IP列表的配置"></a>3. 下线机器后同步ES机器IP列表的配置</h3><p>​    系统中，我们采用<code>logstash</code>对<code>Kafka</code>数据做解析和处理，并将数据发给ES。一次在下线了一台硬盘较小的机器之后，发现有部分数据无法出现在ES集群中，查看抓取日志的程序，确认日志确实已经抓取了。</p>
-<p>查看<code>logstash</code>服务的状态，发现报错有</p>
-<blockquote>
-<p>Running health check to see if an ElasticSearch Connection is …:path=&gt;</p>
-<p>Attempted to resurrect connection to dead ES instance, but got an error,    </p>
-</blockquote>
-<p>发现<code>logstash</code>配置里是ES集群的IP列表，修正<code>logstash</code>IP列表配置，重启<code>logstash</code>，系统恢复了正常。</p>
-<p>P.S. <code>logstash</code>配置中包含下线机器IP和数据延迟没有解析，<strong>这两个问题是否相关并不确定</strong>。只是出现了数据延迟没有解析的问题，<strong>修正IP列表</strong>并<strong>重启</strong>能解决这个问题。(<strong>有可能重启就能解决此问题</strong>)</p>
-<h3 id="4-监控"><a href="#4-监控" class="headerlink" title="4. 监控"></a>4. 监控</h3><p>​    不管是Kafka的监控还是ES集群的监控，都非常必要，能帮助定位和解决问题。平时我主要注意的几个点：</p>
-<p>​    <code>Kafka Lag</code>，<code>ES集群状态</code>，<code>ES集群 硬盘/load</code>。网络情况由运维负责。</p>
-<h3 id="P-S"><a href="#P-S" class="headerlink" title="P.S."></a>P.S.</h3><p>​    从整个ELK架构来看，最稳定可靠高效的部分算是<code>Kafka</code>了，一开始部署的三台<code>Kafka</code>集群，承担了对ES的容错，而且<code>Kafka</code>的官方测试的吞吐量比当前系统的峰值还高几倍，对未来的兼容性也相当优秀。</p>
-<p>​    个人看这些工具的设计和实现，还是<code>Kafka</code>比较多。</p>
-<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ul>
-<li><p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/rolling-upgrades.html" target="_blank" rel="noopener">ES的滚动重启</a></p>
+<h3 id="Kafka-内部机制"><a href="#Kafka-内部机制" class="headerlink" title="Kafka 内部机制"></a>Kafka 内部机制</h3><pre><code>1. `Kafka`的读写操作都是在`leader`。
+ 2. 如果`leader`不可用，从`ISR`列表中选出新的`leader`。其中`ISR`表示`insync replicas`。
+</code></pre><p><code>broker</code>成为<code>ISR</code>需要两点条件。</p>
+<ul>
+<li>维护和<code>zookeeper</code>的心跳session。</li>
+<li><code>broker</code>自身的<code>lag</code>满足配置中的条件。其中配置项为<code>replica.lag.time.max.ms</code>。(<code>Kafka 0.9.0</code>移除了另一个配置项<code>replica.lag.max.messages</code>)</li>
+</ul>
+<p>个人觉得，讨论<code>HA</code>以及<code>CAP</code>的问题，需要将<code>Kafka</code>的读写分开来讨论，因为二者有完全不同的API以及配置项。</p>
+<h4 id="Producer-（写操作）"><a href="#Producer-（写操作）" class="headerlink" title="Producer （写操作）"></a>Producer （写操作）</h4><p><code>producer</code>的<code>HA</code>和三个重要的配置项或属性有关。</p>
+<ul>
+<li><p><code>acks</code></p>
+<p><code>producer</code>的配置项。有三个值。[-1(all), 0, 1]。</p>
+<ul>
+<li><code>acks=0</code>表示<code>producer</code>不等待任何Kafka集群的<code>ack</code>信息。</li>
+<li><code>acks=1</code>表示在<code>leader</code>成功写入数据后才返回<code>ack</code>信息。</li>
+<li><code>acks=all</code>表示在<code>leader</code>等待所有<code>ISR</code>成功写入数据之后才返回<code>ack</code>信息。</li>
+</ul>
 </li>
-<li><p><a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-allocation-explain.html" target="_blank" rel="noopener">查看ES的allocation状态</a></p>
+<li><p><code>min.insync.replicas</code></p>
+<p>当<code>producer</code>的<code>acks=all</code>时，认为写成功需要的最少确认的<code>replicas</code>数量。如果没有达到要求的数量，写操作将会抛出异常而写失败。</p>
+</li>
+<li><p><code>replication.factor</code></p>
+<p>表示<code>topic</code>的<code>replication</code>的数量。</p>
+<hr>
 </li>
 </ul>
+<h5 id="acks-1的情况"><a href="#acks-1的情况" class="headerlink" title="acks=1的情况"></a><code>acks=1</code>的情况</h5><p>考虑第一种情况，也是<code>producer</code>的默认情况，当<code>acks</code>配置为1，当前<code>leader</code>如果不可用，则会造成写入的数据丢失的问题。</p>
+<h5 id="acks-all的情况"><a href="#acks-all的情况" class="headerlink" title="acks=all的情况"></a><code>acks=all</code>的情况</h5><p>根据<code>Kafka</code>文档的描述，假定<code>replication.factor</code>配置的数量为<code>F</code>，<code>min.insync.replicas</code>配置的数量为<code>R</code>。理论上<strong>写操作</strong>能容忍的最大<code>fail-node</code>数量为<code>F-R</code>。</p>
+<h4 id="Consumer（读操作）"><a href="#Consumer（读操作）" class="headerlink" title="Consumer（读操作）"></a>Consumer（读操作）</h4><p><code>consumer</code>相比于<code>producer</code>要简单很多。只要<code>leader</code>存在，那么<code>consumer</code>就是可用的。</p>
+<p>默认情况下，<code>leader</code>是从<code>ISR</code>列表中选出。而<code>ISR</code>数据和<code>leader</code>是一致的。如果<code>ISR</code>数量为<code>R+1</code>，那么读操作能容忍的最大<code>fail-node</code>数量为<code>R</code>。</p>
+<h4 id="影响Producer和Consumer的配置"><a href="#影响Producer和Consumer的配置" class="headerlink" title="影响Producer和Consumer的配置"></a>影响Producer和Consumer的配置</h4><p><code>unclean.leader.election.enable</code>表示，当所有<code>ISR</code>的节点都不可用时，是否将<code>out-of-sync</code>数据落后的节点选为<code>leader</code>。这是典型的在<code>Consistency(一致性)</code>和<code>Available(可用性)</code>之间做抉择的设置。默认为<code>False</code>。</p>
+<h4 id="简单总结"><a href="#简单总结" class="headerlink" title="简单总结"></a>简单总结</h4><p>设想一个简单的情景，如果一个topic的<code>replication.factor</code>为3，根据不同的<code>producer</code>配置，来看看对于<code>producer</code>和<code>consumer</code>的影响。其中<code>unclean.leader.election.enable=False</code>。</p>
+<h5 id="1-acks-1"><a href="#1-acks-1" class="headerlink" title="1. acks=1"></a>1. <code>acks=1</code></h5><p>​    此条件下，<code>producer</code>只需要等待<code>leader</code>完成写操作，就能得到返回数据，写入效率高。因为<code>ISR</code>列表只有<code>leader</code>自己，如果<code>leader</code>不可用，则会导致读写操作都无法继续。</p>
+<h5 id="2-acks-all-amp-min-insync-replicas-2"><a href="#2-acks-all-amp-min-insync-replicas-2" class="headerlink" title="2. acks=all &amp; min.insync.replicas=2"></a>2. <code>acks=all</code> &amp; <code>min.insync.replicas=2</code></h5><p>​    此条件下，<code>producer</code>需要等待<code>leader</code>+<code>ISR</code>之一完成写操作，才能得到返回数据，写入效率稍慢。因为<code>ISR</code>列表有两条记录，如果当前<code>leader</code>不可用，会选择<code>ISR</code>另一台机器作为新的<code>leader</code>，读写都能继续。读写操作能容忍的最大<code>fail-node</code>都是1。</p>
+<h5 id="3-acks-all-amp-min-insync-replicas-3"><a href="#3-acks-all-amp-min-insync-replicas-3" class="headerlink" title="3. acks=all &amp; min.insync.replicas=3"></a>3. <code>acks=all</code> &amp; <code>min.insync.replicas=3</code></h5><p>​    此条件下，<code>producer</code>需要等待三份<code>replication</code>都完成写操作，才能返回数据，写入效率慢。如果当前<code>leader</code>不可用，会造成不可写。所以此情况下，写操作不能容忍<code>fail-node</code>，读操作能容忍2台。</p>
+<h3 id="结合CAP的分析"><a href="#结合CAP的分析" class="headerlink" title="结合CAP的分析"></a>结合CAP的分析</h3><h4 id="Kafka设计的初衷"><a href="#Kafka设计的初衷" class="headerlink" title="Kafka设计的初衷"></a>Kafka设计的初衷</h4><blockquote>
+<p>All distributed systems must make trade-offs between guaranteeing consistency, availability, and partition tolerance (CAP Theorem). Our goal was to support replication in a Kafka cluster within a single datacenter, where network partitioning is rare, so our design focuses on maintaining highly available and strongly consistent replicas. Strong consistency means that all replicas are byte-to-byte identical, which simplifies the job of an application developer.</p>
+</blockquote>
+<p>从<code>LinkedIn</code>最开始的<a href="https://engineering.linkedin.com/kafka/intra-cluster-replication-apache-kafka" target="_blank" rel="noopener">说明</a>来看，<code>Kafka</code>应该是<code>CA</code>的，因为认为<code>P</code>几乎不会发生。</p>
+<h4 id="P"><a href="#P" class="headerlink" title="P"></a>P</h4><p>​    （这里需要一张图）</p>
+<p>​    </p>
 
       
     </div>
@@ -385,11 +399,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/ELK/" rel="tag"># ELK</a>
-          
             <a href="/tags/Kafka/" rel="tag"># Kafka</a>
           
-            <a href="/tags/ElasticSearch/" rel="tag"># ElasticSearch</a>
+            <a href="/tags/CAP/" rel="tag"># CAP</a>
           
         </div>
       
@@ -402,8 +414,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/03/17/Runtime-Polymorphism-Part-1/" rel="next" title="Runtime Polymorphism Part 1">
-                <i class="fa fa-chevron-left"></i> Runtime Polymorphism Part 1
+              <a href="/2019/04/26/ELK-Part1/" rel="next" title="ElasticSearch-Kafka Part1">
+                <i class="fa fa-chevron-left"></i> ElasticSearch-Kafka Part1
               </a>
             
           </div>
@@ -411,10 +423,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/04/28/Kafka-HA-CAP/" rel="prev" title="Kafka-HA-CAP">
-                Kafka-HA-CAP <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -539,7 +547,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#采用ELK架构踩过的坑"><span class="nav-number">1.</span> <span class="nav-text">采用ELK架构踩过的坑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-ElasticSearch执行严格的滚动重启"><span class="nav-number">1.1.</span> <span class="nav-text">1. ElasticSearch执行严格的滚动重启</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-留心ES的兼容性"><span class="nav-number">1.2.</span> <span class="nav-text">2. 留心ES的兼容性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-下线机器后同步ES机器IP列表的配置"><span class="nav-number">1.3.</span> <span class="nav-text">3. 下线机器后同步ES机器IP列表的配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-监控"><span class="nav-number">1.4.</span> <span class="nav-text">4. 监控</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#P-S"><span class="nav-number">1.5.</span> <span class="nav-text">P.S.</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Reference"><span class="nav-number">1.5.1.</span> <span class="nav-text">Reference</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#关于Kafka的HA以及CAP"><span class="nav-number">1.</span> <span class="nav-text">关于Kafka的HA以及CAP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Kafka-内部机制"><span class="nav-number">1.1.</span> <span class="nav-text">Kafka 内部机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Producer-（写操作）"><span class="nav-number">1.1.1.</span> <span class="nav-text">Producer （写操作）</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#acks-1的情况"><span class="nav-number">1.1.1.1.</span> <span class="nav-text">acks=1的情况</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#acks-all的情况"><span class="nav-number">1.1.1.2.</span> <span class="nav-text">acks=all的情况</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Consumer（读操作）"><span class="nav-number">1.1.2.</span> <span class="nav-text">Consumer（读操作）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#影响Producer和Consumer的配置"><span class="nav-number">1.1.3.</span> <span class="nav-text">影响Producer和Consumer的配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#简单总结"><span class="nav-number">1.1.4.</span> <span class="nav-text">简单总结</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-acks-1"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">1. acks=1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-acks-all-amp-min-insync-replicas-2"><span class="nav-number">1.1.4.2.</span> <span class="nav-text">2. acks=all & min.insync.replicas=2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-acks-all-amp-min-insync-replicas-3"><span class="nav-number">1.1.4.3.</span> <span class="nav-text">3. acks=all & min.insync.replicas=3</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#结合CAP的分析"><span class="nav-number">1.2.</span> <span class="nav-text">结合CAP的分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Kafka设计的初衷"><span class="nav-number">1.2.1.</span> <span class="nav-text">Kafka设计的初衷</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#P"><span class="nav-number">1.2.2.</span> <span class="nav-text">P</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
